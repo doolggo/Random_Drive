@@ -43,7 +43,8 @@ An Android app that recommends an optimal, randomized drive course based on your
 
 | Distance & Theme Selection | Destination Recommendation & Navigation |
 | :---: | :---: |
-<img width="443" height="960" alt="IMG_2973" src="https://github.com/user-attachments/assets/7c68013a-877f-4ee8-b73c-d810d872dacd" /> <img src="" width="250" alt="Screen 2"> |<img width="443" height="960" alt="IMG_2974" src="https://github.com/user-attachments/assets/764064b2-7bd0-47ed-a52d-82d1e891d9f7" />
+<img width="443" height="960" alt="IMG_2974" src="https://github.com/user-attachments/assets/764064b2-7bd0-47ed-a52d-82d1e891d9f7" /> |<img width="443" height="960" alt="IMG_2973" src="https://github.com/user-attachments/assets/84199f49-b5c3-46e0-98d4-685bfde27e9c" />
+
 
 
 ---
