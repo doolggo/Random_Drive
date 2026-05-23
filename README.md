@@ -1,10 +1,10 @@
 com.example.random_drive
  ├── api/
- │   ├── RetrofitClient.kt      # Retrofit 객체 초기화 및 설정
- │   └── TMapApiService.kt      # T map 경로 탐색 API 인터페이스 및 데이터 클래스
+ │   ├── RetrofitClient.kt      # Retrofit object initialization and configuration
+ │   └── TMapApiService.kt      # T map Directions API interface and Data Classes
  ├── ui/
- │   └── DriveViewModel.kt      # UI 상태 관리, 랜덤 로직 처리 및 API 통신 (MVVM)
- └── MainActivity.kt            # Jetpack Compose UI (권한 요청, 화면 네비게이션)  
+ │   └── DriveViewModel.kt      # UI state management, random logic processing, and API communication (MVVM)
+ └── MainActivity.kt            # Jetpack Compose UI (Permission requests, screen navigation)
  
 # 🚗 Random Drive
 
