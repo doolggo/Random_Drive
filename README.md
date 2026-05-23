@@ -1,3 +1,4 @@
+<img width="443" height="960" alt="IMG_2973" src="https://github.com/user-attachments/assets/7c68013a-877f-4ee8-b73c-d810d872dacd" />
 com.example.random_drive
  ├── api/
  │   ├── RetrofitClient.kt      # Retrofit object initialization and configuration
