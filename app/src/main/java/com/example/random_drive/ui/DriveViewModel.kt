@@ -7,6 +7,7 @@ import com.example.random_drive.api.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 // 화면에 전달할 목적지 데이터 구조
 data class Destination(val name: String, val lat: Double, val lon: Double)
@@ -16,7 +17,8 @@ class DriveViewModel : ViewModel() {
     val selectedDestination: StateFlow<Destination?> = _selectedDestination
 
     // 🚨 주의: 원래는 보안을 위해 숨겨야 하지만, 테스트를 위해 여기에 직접 적어줍니다.
-    private val tmapAppKey = "a7ZzQ04itT44tqrqvVwZh5tbKuDtql4W4JZMexC5"
+    // 🔒 BuildConfig를 통해 금고에서 안전하게 키를 불러옵니다.
+    private val tmapAppKey = com.example.random_drive.BuildConfig.TMAP_API_KEY
 
     fun findRandomDestination(currentLat: Double, currentLon: Double, minDist: Double, maxDist: Double, type: String) {
         viewModelScope.launch {
@@ -47,7 +49,7 @@ class DriveViewModel : ViewModel() {
 
                     // 4. 화면(MainActivity)에 보여주기 위해 데이터 업데이트
                     _selectedDestination.value = Destination(
-                        name = "$targetName\n(주행 약 ${timeMin}분, ${String.format("%.1f", distanceKm)}km)",
+                        name = "$targetName\n(주행 약 ${timeMin}분, ${String.format(Locale.US, "%.1f", distanceKm)}km)",
                         lat = targetLat,
                         lon = targetLon
                     )

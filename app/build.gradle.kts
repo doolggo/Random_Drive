@@ -1,3 +1,5 @@
+import java.util.Properties
+
 // app/build.gradle.kts
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +9,24 @@ plugins {
 }
 
 android {
+    namespace = "com.example.random_drive"
+    // ... (기존 compileSdk 등 그대로 유지) ...
+
+    // local.properties 파일(금고)을 열어서 읽어올 준비를 합니다.
+    val properties = Properties()
+    properties.load(project.rootProject.file("local.properties").inputStream())
+
+    defaultConfig {
+        // ... (기존 applicationId, minSdk 등 그대로 유지) ...
+
+        // 금고에서 TMAP_API_KEY를 꺼내서 앱이 쓸 수 있는 BuildConfig 변수로 만듭니다. (쌍따옴표 처리 필수)
+        buildConfigField("String", "TMAP_API_KEY", "\"${properties.getProperty("TMAP_API_KEY")}\"")
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     namespace = "com.example.random_drive"
     compileSdk = 36
 
