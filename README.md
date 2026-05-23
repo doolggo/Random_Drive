@@ -1,4 +1,4 @@
-
+````text
 com.example.random_drive
  ├── api/
  │   ├── RetrofitClient.kt      # Retrofit object initialization and configuration
@@ -6,7 +6,7 @@ com.example.random_drive
  ├── ui/
  │   └── DriveViewModel.kt      # UI state management, random logic processing, and API communication (MVVM)
  └── MainActivity.kt            # Jetpack Compose UI (Permission requests, screen navigation)
- 
+ `````
 # 🚗 Random Drive
 
 **"When you're not sure where to go, a customized random drive starting right from your current location."**
