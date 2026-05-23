@@ -1,54 +1,62 @@
 package com.example.random_drive.ui
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.util.Log
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.random_drive.data.AppDatabase
-import com.example.random_drive.data.Destination
-import com.example.random_drive.location.LocationHelper
+import com.example.random_drive.api.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class DriveViewModel(application: Application) : AndroidViewModel(application) {
-    private val dao = AppDatabase.getDatabase(application).destinationDao()
+// 화면에 전달할 목적지 데이터 구조
+data class Destination(val name: String, val lat: Double, val lon: Double)
 
+class DriveViewModel : ViewModel() {
     private val _selectedDestination = MutableStateFlow<Destination?>(null)
     val selectedDestination: StateFlow<Destination?> = _selectedDestination
 
-    init {
-        // 앱 실행 시 테스트용 데이터 로드
-        viewModelScope.launch {
-            dao.insertAll(
-                Destination(name = "을왕리 해수욕장", type = "바다", latitude = 37.4445, longitude = 126.3708),
-                Destination(name = "북한산 국립공원", type = "산", latitude = 37.6593, longitude = 126.9839),
-                Destination(name = "남양주 두물머리", type = "강", latitude = 37.5332, longitude = 127.3175),
-                Destination(name = "강남역", type = "도심", latitude = 37.4979, longitude = 127.0276)
-            )
-        }
-    }
+    // 🚨 주의: 원래는 보안을 위해 숨겨야 하지만, 테스트를 위해 여기에 직접 적어줍니다.
+    private val tmapAppKey = "a7ZzQ04itT44tqrqvVwZh5tbKuDtql4W4JZMexC5"
 
-    fun findRandomDestination(
-        currentLat: Double,
-        currentLon: Double,
-        minDist: Double,
-        maxDist: Double,
-        selectedType: String
-    ) {
+    fun findRandomDestination(currentLat: Double, currentLon: Double, minDist: Double, maxDist: Double, type: String) {
         viewModelScope.launch {
-            val typeFilteredList = dao.getDestinationsByType(selectedType)
+            try {
+                // 1. 임시 목적지 설정 (나중에는 'type'에 맞는 장소의 좌표를 랜덤으로 뽑아올 예정입니다)
+                // 현재 테스트용 임시 목적지: 잠실 롯데월드
+                val targetLat = 37.5113
+                val targetLon = 127.0980
+                val targetName = "잠실 롯데월드 ($type)"
 
-            val distanceFilteredList = typeFilteredList.filter { dest ->
-                val distance = LocationHelper.calculateDistance(
-                    currentLat, currentLon, dest.latitude, dest.longitude
+                // 2. 티맵 서버에 길 찾기 요청 (진짜 통신 시작!)
+                Log.d("TMapAPI", "티맵 서버에 경로를 요청합니다...")
+                val response = RetrofitClient.tMapApiService.getRoute(
+                    appKey = tmapAppKey,
+                    startX = currentLon.toString(), // 💡 티맵 API는 경도(X), 위도(Y) 순서로 넣어야 합니다!
+                    startY = currentLat.toString(),
+                    endX = targetLon.toString(),
+                    endY = targetLat.toString()
                 )
-                distance in minDist..maxDist
-            }
 
-            if (distanceFilteredList.isNotEmpty()) {
-                _selectedDestination.value = distanceFilteredList.random()
-            } else {
-                _selectedDestination.value = Destination(name = "조건에 맞는 곳이 없습니다.", type = "", latitude = 0.0, longitude = 0.0)
+                // 3. 서버에서 준 결과물 알짜배기만 뽑아내기
+                val properties = response.features.firstOrNull()?.properties
+                if (properties != null) {
+                    val distanceKm = properties.totalDistance / 1000.0 // 미터를 킬로미터로 변환
+                    val timeMin = properties.totalTime / 60            // 초를 분으로 변환
+
+                    Log.d("TMapAPI", "성공! 거리: ${distanceKm}km, 시간: ${timeMin}분")
+
+                    // 4. 화면(MainActivity)에 보여주기 위해 데이터 업데이트
+                    _selectedDestination.value = Destination(
+                        name = "$targetName\n(주행 약 ${timeMin}분, ${String.format("%.1f", distanceKm)}km)",
+                        lat = targetLat,
+                        lon = targetLon
+                    )
+                }
+
+            } catch (e: Exception) {
+                // 인터넷이 끊겼거나 키가 틀렸을 때 에러 처리
+                Log.e("TMapAPI", "API 통신 에러 발생: ${e.message}")
+                _selectedDestination.value = Destination("경로 탐색 실패 😢\n인터넷이나 키를 확인해주세요.", 0.0, 0.0)
             }
         }
     }
