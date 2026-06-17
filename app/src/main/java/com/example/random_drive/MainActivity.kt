@@ -49,6 +49,7 @@ import com.example.random_drive.ui.Destination
 import com.example.random_drive.ui.DriveViewModel
 import com.google.android.gms.location.LocationServices
 
+// 공통 UI 컬러 팔레트 정의
 val BgColor = Color(0xFFF8F9FA)
 val CardWhite = Color(0xFFFFFFFF)
 val PrimaryPurple = Color(0xFF6B4EFF)
@@ -61,6 +62,7 @@ val TmapBlue = Color(0xFF003F63)
 
 class MainActivity : ComponentActivity() {
 
+    // 지연 없는 효과음 재생을 위한 SoundPool 객체
     private lateinit var soundPool: SoundPool
     private var carStartSoundId: Int = 0
     private var btnClickSoundId: Int = 0
@@ -68,6 +70,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 오디오 속성 설정 (UI 피드백에 최적화된 속성 부여)
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -78,6 +81,7 @@ class MainActivity : ComponentActivity() {
             .setAudioAttributes(audioAttributes)
             .build()
 
+        // 로컬 리소스(raw)에서 효과음 로드
         carStartSoundId = soundPool.load(this, R.raw.car_start, 1)
         btnClickSoundId = soundPool.load(this, R.raw.btn_click, 1)
 
@@ -98,6 +102,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * SoundPool을 활용한 효과음 재생 메서드
+     */
     private fun playSound(soundId: Int) {
         if (soundId != 0) {
             soundPool.play(soundId, 1.0f, 1.0f, 1, 0, 1.0f)
@@ -106,23 +113,27 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        soundPool.release()
+        soundPool.release() // 메모리 누수 방지를 위한 리소스 해제
     }
 }
 
+/**
+ * 앱의 메인 내비게이션 및 위치 권한 관리 컴포저블
+ */
 @Composable
 fun DriveAppScreen(
     viewModel: DriveViewModel = viewModel(),
     onPlayClick: () -> Unit,
     onPlayCarStart: () -> Unit
 ) {
-    var step by remember { mutableIntStateOf(1) }
+    var step by remember { mutableIntStateOf(1) } // 1: 입력 화면, 2: 결과 화면
     val destination by viewModel.selectedDestination.collectAsState()
 
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var currentLocation by remember { mutableStateOf<Location?>(null) }
 
+    // 위치 권한 요청 런처
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -135,6 +146,7 @@ fun DriveAppScreen(
         }
     }
 
+    // 앱 실행 시 초기 권한 체크 및 위치 정보 획득
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationClient.lastLocation.addOnSuccessListener { loc -> currentLocation = loc }
@@ -173,6 +185,9 @@ fun DriveAppScreen(
     }
 }
 
+/**
+ * 드라이브 조건 설정 화면 (거리, 테마, 랜덤 여부)
+ */
 @Composable
 fun SingleInputScreen(
     onRecommendClick: (Float, String) -> Unit,
@@ -191,49 +206,32 @@ fun SingleInputScreen(
             .verticalScroll(scrollState)
             .padding(bottom = 100.dp)
     ) {
+        // 헤더 영역
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFFE0E7FF), BgColor)
-                    )
-                )
+                .background(Brush.verticalGradient(colors = listOf(Color(0xFFE0E7FF), BgColor)))
                 .padding(top = 60.dp, start = 24.dp, end = 24.dp, bottom = 24.dp)
         ) {
             Column {
                 Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextMain, modifier = Modifier.size(28.dp))
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 💡 글자 색상을 디자인과 똑같이 맞추고, 바로 옆에 자동차 애니메이션을 배치했습니다!
-                Text(
-                    text = "어디로 드라이브",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = TextMain
-                )
+                Text(text = "어디로 드라이브", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold, color = TextMain)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "떠나볼까요?",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = PrimaryPurple // 원본 디자인처럼 보라색 강조
-                    )
+                    Text(text = "떠나볼까요?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold, color = PrimaryPurple)
                     Spacer(modifier = Modifier.width(8.dp))
-                    AnimatedInlineCar() // 글씨 바로 옆에서 달리는 자동차
+                    AnimatedInlineCar() // 자동차 주행 애니메이션
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "원하는 조건을 선택하고 추천받아보세요",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSub
-                )
+                Text(text = "원하는 조건을 선택하고 추천받아보세요", style = MaterialTheme.typography.bodyMedium, color = TextSub)
             }
         }
 
+        // 조건 설정 영역
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            // 1. 거리 제한 카드
+            // 거리 제한 설정
             SettingCard(
                 icon = Icons.Default.LocationOn,
                 title = "거리 제한",
@@ -249,9 +247,7 @@ fun SingleInputScreen(
                     valueRange = 10f..100f,
                     steps = 8,
                     colors = SliderDefaults.colors(
-                        thumbColor = PrimaryPurple,
-                        activeTrackColor = PrimaryPurple,
-                        inactiveTrackColor = DividerColor
+                        thumbColor = PrimaryPurple, activeTrackColor = PrimaryPurple, inactiveTrackColor = DividerColor
                     )
                 )
 
@@ -263,8 +259,7 @@ fun SingleInputScreen(
                     distances.forEach { dist ->
                         Text(
                             text = if (dist == 10 || dist == 100) "${dist}km" else "$dist",
-                            color = TextSub,
-                            fontSize = 11.sp
+                            color = TextSub, fontSize = 11.sp
                         )
                     }
                 }
@@ -272,7 +267,7 @@ fun SingleInputScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. 분위기 선택 카드
+            // 테마 설정
             SettingCard(
                 icon = Icons.Default.Face,
                 title = "분위기 선택",
@@ -293,10 +288,7 @@ fun SingleInputScreen(
                     themes.forEach { (uiLabel, emoji, dbValue) ->
                         val isSelected = selectedType == dbValue
                         ThemeTile(
-                            label = uiLabel,
-                            emoji = emoji,
-                            isSelected = isSelected,
-                            modifier = Modifier.weight(1f)
+                            label = uiLabel, emoji = emoji, isSelected = isSelected, modifier = Modifier.weight(1f)
                         ) {
                             onPlayClick()
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -309,7 +301,7 @@ fun SingleInputScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. 랜덤 추천 스위치
+            // 랜덤 모드 스위치
             Card(
                 modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(24.dp)),
                 colors = CardDefaults.cardColors(containerColor = CardWhite),
@@ -343,6 +335,7 @@ fun SingleInputScreen(
         }
     }
 
+    // 하단 고정 추천 버튼
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         val interactionSource = remember { MutableInteractionSource() }
         val isPressed by interactionSource.collectIsPressedAsState()
@@ -375,59 +368,48 @@ fun SingleInputScreen(
     }
 }
 
-// 💡 텍스트 바로 옆에서 통통 튀며 앞으로 주행하는 자동차 애니메이션 컴포저블
+/**
+ * 무한 반복되는 자동차 주행 애니메이션
+ */
 @Composable
 fun AnimatedInlineCar() {
     val infiniteTransition = rememberInfiniteTransition(label = "inline_car")
 
-    // 1. 앞으로 슝 달려나가는 X 좌표 애니메이션
+    // X축 이동 (앞으로 주행)
     val xOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 120f, // 텍스트 옆에서 시작해서 우측으로 120dp 이동
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
+        initialValue = 0f, targetValue = 120f,
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Restart),
         label = "xOffset"
     )
 
-    // 2. 멀어지면서 스르륵 투명해지는 애니메이션
+    // 투명도 (주행하며 서서히 사라짐)
     val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
+        initialValue = 1f, targetValue = 0f,
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Restart),
         label = "alpha"
     )
 
-    // 3. 엔진이 걸린 것처럼 위아래로 통통 튀는 애니메이션
+    // Y축 바운스 (엔진 진동)
     val yBounce by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 150, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
+        initialValue = 0f, targetValue = -6f,
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 150, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse),
         label = "yBounce"
     )
 
     Text(
         text = "🚗💨",
         fontSize = 32.sp,
-        modifier = Modifier
-            .offset(x = xOffset.dp, y = yBounce.dp)
-            .alpha(alpha)
+        modifier = Modifier.offset(x = xOffset.dp, y = yBounce.dp).alpha(alpha)
     )
 }
 
+/**
+ * 설정 항목 그룹화를 위한 공통 카드 레이아웃
+ */
 @Composable
 fun SettingCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    trailingText: String,
+    title: String, subtitle: String, trailingText: String,
     content: @Composable () -> Unit
 ) {
     Card(
@@ -458,13 +440,12 @@ fun SettingCard(
     }
 }
 
+/**
+ * 테마 선택용 개별 타일 레이아웃
+ */
 @Composable
 fun ThemeTile(
-    label: String,
-    emoji: String,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    label: String, emoji: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit
 ) {
     val bgColor by animateColorAsState(if (isSelected) PrimaryPurpleLight else CardWhite, label = "bg")
     val borderColor by animateColorAsState(if (isSelected) PrimaryPurple else DividerColor, label = "border")
@@ -488,12 +469,15 @@ fun ThemeTile(
     }
 }
 
+/**
+ * 최종 추천 결과 출력 및 외부 내비게이션 호출 화면
+ */
 @Composable
 fun ResultScreen(destination: Destination?, onRetry: () -> Unit, onNavigationClick: () -> Unit, onPlayClick: () -> Unit) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val destName = destination?.name ?: "탐색 중..."
-    val pureName = destName.split("\n")[0]
+    val pureName = destName.split("\n")[0] // 부가 정보(시간/거리) 제거 후 순수 명칭만 추출
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Default.LocationOn, contentDescription = null, tint = PrimaryPurple, modifier = Modifier.size(64.dp))
@@ -508,7 +492,9 @@ fun ResultScreen(destination: Destination?, onRetry: () -> Unit, onNavigationCli
         Spacer(modifier = Modifier.height(40.dp))
 
         if (destination != null && destination.lat != 0.0) {
+            // 외부 내비게이션 앱 호출 그룹
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // TMap 호출
                 Button(
                     onClick = {
                         onNavigationClick()
@@ -530,6 +516,7 @@ fun ResultScreen(destination: Destination?, onRetry: () -> Unit, onNavigationCli
                     Text("T map 안내", fontWeight = FontWeight.Bold)
                 }
 
+                // 네이버 지도 호출
                 Button(
                     onClick = {
                         onNavigationClick()

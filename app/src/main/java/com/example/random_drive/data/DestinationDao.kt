@@ -4,6 +4,9 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 
+/**
+ * 데이터베이스 접근 객체(Data Access Object)
+ */
 @Dao
 interface DestinationDao {
     @Insert

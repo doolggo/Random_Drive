@@ -10,20 +10,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-// 1. 화면에 넘겨줄 최종 목적지 데이터 (좌표 필수)
+/**
+ * 최종 도출된 목적지 상태를 관리하는 데이터 모델
+ */
 data class Destination(val name: String, val lat: Double, val lon: Double, val type: String)
 
-// 2. 조원분이 만든 카테고리-장소 데이터 구조
+/**
+ * 로컬 데이터베이스 조회를 위한 아이템 구조
+ */
 data class PlaceItem(val category: String, val placeName: String)
 
 class DriveViewModel : ViewModel() {
+    // UI 상태 관리를 위한 StateFlow 객체
     private val _selectedDestination = MutableStateFlow<Destination?>(null)
     val selectedDestination: StateFlow<Destination?> = _selectedDestination
 
-    // 안전한 금고에서 앱키 가져오기
+    // BuildConfig를 통한 API Key 은닉 및 로드
     private val tmapAppKey = BuildConfig.TMAP_API_KEY
 
-    // ⭐️ 조원분이 새롭게 업데이트한 DB 리스트 적용 완료!
+    // 로컬 하드코딩 데이터베이스 (검색 풀 확보)
     private val destinationList = listOf(
         PlaceItem("바다", "을왕리 해수욕장"),
         PlaceItem("바다", "왕산 해수욕장"),
@@ -127,18 +132,19 @@ class DriveViewModel : ViewModel() {
         PlaceItem("도심", "캐리비안베이")
     )
 
+    /**
+     * TMap API를 이용한 목적지 필터링 및 거리 검증 로직
+     */
     fun findRandomDestination(currentLat: Double, currentLon: Double, minDist: Double, maxDist: Double, selectedType: String) {
         viewModelScope.launch {
-            // 버튼을 누르자마자 즉시 화면을 로딩 상태로 변경하여 이전 찌꺼기나 에러 문구를 지웁니다.
+            // 통신 전 로딩 상태 처리
             _selectedDestination.value = Destination(
                 name = "목적지를 찾는 중입니다...\n잠시만 기다려 주세요. 🚗💨",
-                lat = 0.0,
-                lon = 0.0,
-                type = ""
+                lat = 0.0, lon = 0.0, type = ""
             )
 
             try {
-                // 1. 선택한 테마에 맞는 장소들을 거른 뒤, 무작위 순서로 섞습니다(.shuffled())
+                // 사용자가 선택한 카테고리로 1차 필터링 후 무작위 셔플
                 val filteredList = destinationList.filter { it.category == selectedType }.shuffled()
 
                 if (filteredList.isEmpty()) {
@@ -148,13 +154,12 @@ class DriveViewModel : ViewModel() {
 
                 var isMatched = false
 
-                // 2. 조건에 맞는 장소가 나올 때까지 섞인 리스트 전체를 순서대로 탐색합니다.
+                // 2차 필터링: API 통신을 통해 실제 거리를 검증
                 for ((i, currentPick) in filteredList.withIndex()) {
                     val targetName = currentPick.placeName
-
                     Log.d("TMapAPI", "${i + 1}번째 후보 탐색 중: '$targetName'")
 
-                    // 3. 티맵 API로 후보 장소의 좌표 검색
+                    // 1단계: POI 검색으로 좌표(Lat, Lon) 획득
                     val poiResponse = RetrofitClient.tMapApiService.searchPoi(
                         appKey = tmapAppKey,
                         keyword = targetName
@@ -164,13 +169,11 @@ class DriveViewModel : ViewModel() {
                     val targetLat = firstPoi.noorLat.toDouble()
                     val targetLon = firstPoi.noorLon.toDouble()
 
-                    // 4. 해당 좌표까지의 실제 주행 거리 계산
+                    // 2단계: Route API로 출발지와 목적지 간 실제 주행 거리 산출
                     val routeResponse = RetrofitClient.tMapApiService.getRoute(
                         appKey = tmapAppKey,
-                        startX = currentLon.toString(),
-                        startY = currentLat.toString(),
-                        endX = targetLon.toString(),
-                        endY = targetLat.toString()
+                        startX = currentLon.toString(), startY = currentLat.toString(),
+                        endX = targetLon.toString(), endY = targetLat.toString()
                     )
 
                     val properties = routeResponse.features.firstOrNull()?.properties
@@ -178,33 +181,22 @@ class DriveViewModel : ViewModel() {
                         val distanceKm = properties.totalDistance / 1000.0
                         val timeMin = properties.totalTime / 60
 
-                        Log.d("TMapAPI", "-> 후보 '$targetName'의 실제 주행거리: ${distanceKm}km")
-
-                        // 5. 실제 주행거리가 사용자가 설정한 범위(minDist ~ maxDist) 사이에 있는지 확인
+                        // 3단계: 주행 거리가 사용자 설정 반경 이내인지 검증
                         if (distanceKm in minDist..maxDist) {
-                            Log.d("TMapAPI", "🎉 조건 일치 목적지 발견! 화면에 표출합니다.")
-
                             _selectedDestination.value = Destination(
                                 name = "$targetName\n(주행 약 ${timeMin}분, ${String.format(Locale.US, "%.1f", distanceKm)}km)",
-                                lat = targetLat,
-                                lon = targetLon,
-                                type = selectedType
+                                lat = targetLat, lon = targetLon, type = selectedType
                             )
                             isMatched = true
-                            break // 완벽한 목적지를 찾았으므로 반복문을 즉시 중단하고 탈출합니다!
-                        } else {
-                            Log.d("TMapAPI", "-> 설정한 거리 범위(${minDist}~${maxDist}km)를 벗어나 탈락. 다음 후보로 넘어갑니다.")
+                            break // 조건 부합 시 즉시 반복문 탈출 및 결과 반환
                         }
                     }
                 }
 
-                // 6. 리스트를 끝까지 다 뒤졌는데도 조건에 맞는 장소가 주변에 단 하나도 없는 경우
                 if (!isMatched) {
                     _selectedDestination.value = Destination(
                         name = "선택하신 거리 조건(${minDist.toInt()}~${maxDist.toInt()}km)에 맞는 장소를 주변에서 찾지 못했습니다. 😢\n다시 시도하거나 거리 설정을 넓혀주세요.",
-                        lat = 0.0,
-                        lon = 0.0,
-                        type = ""
+                        lat = 0.0, lon = 0.0, type = ""
                     )
                 }
 
