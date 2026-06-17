@@ -7,27 +7,27 @@ com.example.random_drive
  │   └── DriveViewModel.kt      # UI state management, random logic processing, and API communication (MVVM)
  └── MainActivity.kt            # Jetpack Compose UI (Permission requests, screen navigation)
  `````
-# 🚗 Random Drive
+# Random Drive
 
 **"When you're not sure where to go, a customized random drive starting right from your current location."**
 An Android app that recommends an optimal, randomized drive course based on your current location (GPS), desired distance, and theme. It also connects you directly to navigation apps with a single touch.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-* **📍 Real-time Location Based (GPS)**
+* ** Real-time Location Based (GPS)**
   * Collects the user's exact current latitude and longitude coordinates using `FusedLocationProviderClient`.
-* **🎲 Customized Theme Random Recommendation**
+* ** Customized Theme Random Recommendation**
   * Recommends destinations that match your conditions by taking the driving radius (km) and preferred scenery theme (Ocean, Mountain, River, City) as inputs.
-* **⏱️ Real-time Route Calculation based on T map API**
+* ** Real-time Route Calculation based on T map API**
   * Integrates the T map Directions API to provide accurate actual driving distance (km) and estimated travel time (minutes), rather than just a straight-line distance.
-* **🗺️ Direct Navigation Deep Link Integration**
+* ** Direct Navigation Deep Link Integration**
   * Instantly launches the **T map** or **Naver Map** app based on the recommended destination's name and coordinates, starting route guidance immediately without any typing. (Redirects to Google Play Store if not installed).
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Language:** Kotlin
 * **UI Toolkit:** Jetpack Compose (Material Design 3)
@@ -39,7 +39,7 @@ An Android app that recommends an optimal, randomized drive course based on your
 
 ---
 
-## 📱 Screenshots
+## Screenshots
 
 | Distance & Theme Selection | Destination Recommendation & Navigation |
 | :---: | :---: |
@@ -47,14 +47,13 @@ An Android app that recommends an optimal, randomized drive course based on your
 
 
 
----
+----------------------
 
-## 🚀 How to Run
+## How to Run
 
 This project uses the T map Open API. To build and run the project, you will need your own App Key.
 
 1. Create a project on the [SK Open API Portal](https://openapi.sk.com/) and issue an App Key.
 2. Enter the issued key into the `tmapAppKey` variable inside the `ui/DriveViewModel.kt` file.
-   ```kotlin
    // DriveViewModel.kt
    private val tmapAppKey = "YOUR_TMAP_APP_KEY_HERE"
